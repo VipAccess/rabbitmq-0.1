@@ -22,6 +22,9 @@ class Render:
 
     def callback(self, ch, method, properties, body):
         data = json.loads(body)
+        self.channel.basic_publish(exchange='',
+                                   routing_key=self.queue_name,
+                                   body=f'{self.render_name} is connected.')
         print(f'{self.render_name} received task : ...')
         time.sleep(data.get('duration'))
         result = f'Result is ...'

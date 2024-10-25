@@ -1,4 +1,5 @@
 import pika
+import json
 
 class AddServer:
     connection = pika.BlockingConnection(pika.ConnectionParameters('localhost'))  # Подключение.
@@ -6,13 +7,17 @@ class AddServer:
 
     @staticmethod
     def callback(channel, method, properties, body):
-        agent, text = body.decode().split('-')
+        data = json.loads(body)
+        agent = data['queue']
+        operation = data['operation']
         print(f'Request from {agent}')
-        channel.basic_publish(
-            exchange='',
-            routing_key=agent,
-            body='server-info1',  # Отправляет заказчику свободного информатора.
-        )
+        if operation == 'available informant':
+            data = {'queue': 'server', 'operation': 'available informant', 'text': 'info1'}
+            channel.basic_publish(
+                exchange='',
+                routing_key=agent,
+                body=json.dumps(data),  # Отправляет заказчику свободного информатора.
+            )
 
     def __init__(self):
         self.channel.queue_declare(queue='server', durable=True)

@@ -1,7 +1,7 @@
 import threading
 import pika
 import time
-
+import json
 
 class AddCustomer:
     connection = pika.BlockingConnection(pika.ConnectionParameters('localhost'))  # Подключение.
@@ -17,9 +17,12 @@ class AddCustomer:
 
 
     def callback(self, channel, method, properties, body):
-        agent, text = body.decode().split('-')
+        data = json.loads(body)
+        agent = data['queue']
+        operation = data['operation']
+        message = data['text']
         if agent == 'server':
-            print(f'-- Available informant - {text}')
+            print(f'-- Available informant - {message}')
         #     self.get_allocator(text) # Получить распределитель.
         # elif agent.startswith('informant'):
         #     print(f'-- Available allocator - {text}')
@@ -41,10 +44,11 @@ class AddCustomer:
         self.task = None  #Обнуление задачи
         text = input('Enter "start"\n')
         if text.lower() == 'start':
+            data = {'queue': self.queue, 'operation': 'available informant', 'text': text}
             self.channel.basic_publish(
                 exchange='',
                 routing_key='server',
-                body=f'{self.queue}-{text}',
+                body=json.dumps(data),
                 #properties=pika.BasicProperties(delivery_mode=pika.DeliveryMode.Persistent)  # Долговечное сообщение
                 )
         else:
@@ -56,10 +60,11 @@ class AddCustomer:
         text = input('Please enter a task(Число):\n')
         self.task = text
         task_information = self.task  # Информация о полученной задаче (Размер данных).
+        data = {'queue': self.queue, 'operation': 'available allocator', 'text': task_information}
         self.channel.basic_publish(
             exchange='',
             routing_key=informant,
-            body=f'{self.queue}-{task_information}',
+            body=json.dumps(data),
             #properties=pika.BasicProperties(delivery_mode=pika.DeliveryMode.Persistent)  # Долговечное сообщение
         )
 
@@ -68,10 +73,11 @@ class AddCustomer:
         print('-- Loading...')
         for i in range(5, 0, -1):  # Имитация загрузки
             print(f'{i}...')
+        data = {'queue': self.queue, 'operation': 'submit_task', 'text': self.task}
         self.channel.basic_publish(
             exchange='',
             routing_key=allocator,
-            body=f'{self.queue}-{self.task}',
+            body=json.dumps(data),
             # properties=pika.BasicProperties(delivery_mode=pika.DeliveryMode.Persistent)  # Долговечное сообщение
         )
         print('-- Task in processing')

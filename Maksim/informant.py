@@ -35,4 +35,4 @@ class Informant:
         print(f"{self.informant_name} started listening for requests.")
         self.channel.start_consuming()
 
-Informant('info1')
+Informant('informant1')

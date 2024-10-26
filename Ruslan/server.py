@@ -12,7 +12,7 @@ class AddServer:
         operation = data['operation']
         print(f'Request from {agent}')
         if operation == 'available informant':
-            data = {'queue': 'server', 'operation': 'available informant', 'text': 'info1'}
+            data = {'queue': 'server', 'operation': 'available informant', 'text': 'informant1'}
             channel.basic_publish(
                 exchange='',
                 routing_key=agent,

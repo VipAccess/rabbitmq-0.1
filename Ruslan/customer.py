@@ -1,6 +1,4 @@
-import threading
 import pika
-import time
 import json
 
 class AddCustomer:
@@ -27,7 +25,7 @@ class AddCustomer:
         # Обработка ответа от сервера о свободных информаторах
         if agent == 'server' and operation == 'available informant':
             print(f'-- Available informants: {message}')
-            self.informant = input('Choose an informant (e.g., info1): ')
+            self.informant = input('Choose an informant (e.g., informant1): ')
             self.get_allocator(self.informant)
         
         # Обработка ответа от информатора о свободных распределителях
@@ -35,6 +33,9 @@ class AddCustomer:
             print(f'-- Available allocators: {message}')
             self.allocator = input('Choose an allocator to submit a task (e.g., distributor1): ')
             self.submit_a_task(self.allocator)
+
+        # Добавить новую задачу
+            self.get_informant()
         
         # Подтверждение завершения задачи от распределителя
         elif agent.startswith('distributor') and operation == 'task completed':

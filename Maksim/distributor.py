@@ -14,7 +14,7 @@ class Distributor:
 
     def callback(self, channel, method, properties, body):
         data = json.loads(body)
-        
+        print(data)
         operation = data['operation']
         
         # Обработка запроса на задачу

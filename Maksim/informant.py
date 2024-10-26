@@ -18,7 +18,7 @@ class Informant:
         operation = data['operation']
         # в поле text заглушка
         if operation == 'available allocator':
-            response = {'queue': data['queue'], 'operation': 'available allocator', 'text': 'distributor1'}
+            response = {'queue': self.informant_name, 'operation': 'available allocator', 'text': 'distributor1'}
             self.channel.basic_publish(
                 exchange='',
                 routing_key=agent,

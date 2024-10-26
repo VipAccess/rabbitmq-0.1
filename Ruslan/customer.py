@@ -34,7 +34,7 @@ class AddCustomer:
             self.allocator = input('Choose an allocator to submit a task (e.g., distributor1): ')
             self.submit_a_task(self.allocator)
 
-        # Добавить новую задачу
+            # Добавить новую задачу
             self.get_informant()
         
         # Подтверждение завершения задачи от распределителя

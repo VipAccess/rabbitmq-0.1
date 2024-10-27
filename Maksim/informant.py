@@ -7,9 +7,9 @@ class Informant:
 
         self.connection = pika.BlockingConnection(pika.ConnectionParameters('localhost'))
         self.channel = self.connection.channel()
-        self.channel.exchange_declare(exchange='all_agents', exchange_type='fanout')
-        self.channel.queue_bind(exchange='all_agents', queue=self.informant_name)
+        self.channel.exchange_declare(exchange='all_agents', exchange_type='fanout', durable=True)
         self.channel.queue_declare(queue=self.informant_name, durable=True)
+        self.channel.queue_bind(exchange='all_agents', queue=self.informant_name)
 
         self.run_consuming()
 
@@ -35,7 +35,6 @@ class Informant:
                 routing_key='server',
                 body=json.dumps(response)
             )
-
 
     def run_consuming(self):
         self.channel.basic_consume(

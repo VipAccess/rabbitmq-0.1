@@ -1,15 +1,22 @@
 import pika
 import json
 import time
+import threading
+import amqpstorm
 
 class AddServer:
     connection = pika.BlockingConnection(pika.ConnectionParameters('localhost'))  # Подключение.
     channel = connection.channel()  # Создание канала.
 
     def __init__(self):
-        self.active_informants = [] #
+        self.active_agents = [] # Список активных агентов.
         self.channel.queue_declare(queue='server', durable=True)
         self.channel.basic_qos(prefetch_count=1)
+
+        # https://stackoverflow.com/questions/65423312/pika-pop-from-an-empty-queue
+        # Собирает адреса активных агентов.
+        conn = amqpstorm.Connection('localhost', 'guest', 'guest')
+        threading.Thread(target=self.get_active_agents, kwargs={'conn': conn}).start()
         self.run_consuming()
 
     def callback(self, channel, method, properties, body):
@@ -18,13 +25,11 @@ class AddServer:
         operation = data['operation']
         print(f'Request from {agent}')
 
-        # Проверка активных информаторов.
+        # Возврат активного информатора заказчику.
         if agent.startswith('customer') and operation == 'available informant':
-            print('-- Collecting data')
-            self.get_active_informants()  # Сбор активных информаторов.
-            time.sleep(3)
-            if self.active_informants:
-                informant = self.active_informants[0]
+            informants = [agent for agent in self.active_agents if agent.startswith('informant')]
+            if informants:
+                informant = informants[0]
             else:
                 informant = 'no active informants'
             response = {'queue': 'server', 'operation': 'available informant', 'text': informant}
@@ -33,13 +38,10 @@ class AddServer:
                 routing_key=agent,
                 body=json.dumps(response)
             )
-            self.active_informants = []  # Обнуление списка активных информаторов.
 
-
-        # Подтверждение активности от информатора.
-        elif agent.startswith('informant') and operation == 'activity confirmation':
-            print(f'-- {agent} active')
-            self.active_informants.append(agent)
+        # Подтверждение активности от агентов.
+        elif operation == 'activity confirmation':
+            self.active_agents.append(agent)
 
 
     def run_consuming(self):
@@ -51,13 +53,18 @@ class AddServer:
         )
         self.channel.start_consuming()  # Старт потребления (бесконечный цикл).
 
-    def get_active_informants(self):
-        """Получить активных информаторов"""
-        data = {'queue': 'server', 'operation': 'activity check', 'text': 'confirm activity status'}
-        self.channel.basic_publish(
-            exchange='only_informants',
-            routing_key='',
-            body=json.dumps(data),
-        )
+    def get_active_agents(self, conn: amqpstorm.Connection):
+        """Получить активных агентов"""
+        with conn.channel():
+            while True:
+                self.active_agents = []  # Обнуление списка активных агентов.
+                data = {'queue': 'server', 'operation': 'activity check', 'text': 'confirm activity status'}
+                self.channel.basic_publish(
+                    exchange='all_agents',
+                    routing_key='',
+                    body=json.dumps(data),
+                )
+                time.sleep(5)
+                print(f'-- Active agents {self.active_agents}')
 
 AddServer()

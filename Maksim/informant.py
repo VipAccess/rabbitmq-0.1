@@ -7,15 +7,14 @@ class Informant:
 
         self.connection = pika.BlockingConnection(pika.ConnectionParameters('localhost'))
         self.channel = self.connection.channel()
-        self.channel.exchange_declare(exchange='only_informants', exchange_type='fanout')
-        self.channel.queue_bind(exchange='only_informants', queue=self.informant_name)
+        self.channel.exchange_declare(exchange='all_agents', exchange_type='fanout')
+        self.channel.queue_bind(exchange='all_agents', queue=self.informant_name)
         self.channel.queue_declare(queue=self.informant_name, durable=True)
 
         self.run_consuming()
 
     def callback(self, channel, method, properties, body):
         data = json.loads(body)
-        print(data)
         agent = data['queue']
         operation = data['operation']
         # в поле text заглушка

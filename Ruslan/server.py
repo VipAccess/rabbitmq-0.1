@@ -52,7 +52,7 @@ class AddServer:
         """Начинает принимать сообщения."""
         self.channel.basic_consume(
             queue='server',
-            # auto_ack=False,  # Автоматического подтверждения выполненной задачи.
+            auto_ack=True,  # Автоматического подтверждения выполненной задачи.
             on_message_callback=self.callback
         )
         self.channel.start_consuming()  # Старт потребления (бесконечный цикл).

@@ -2,22 +2,26 @@ import pika
 import json
 import time
 import threading
-import amqpstorm
+
+connection = pika.BlockingConnection(pika.ConnectionParameters('localhost'))
+
 
 class AddServer:
-    connection = pika.BlockingConnection(pika.ConnectionParameters('localhost'))  # Подключение.
-    channel = connection.channel()  # Создание канала.
 
-    def __init__(self):
-        self.active_agents = [] # Список активных агентов.
+    def __init__(self, connection):
+        # Подключение.
+        self.connection = connection
+        self.channel = self.connection.channel()  # Создание канала.
+        self.active_agents = []  # Список активных агентов.
         self.channel.queue_declare(queue='server', durable=True)
-        self.channel.basic_qos(prefetch_count=1)
+        self.channel.exchange_declare(exchange='all_agents', exchange_type='fanout', durable=True)
 
-        # https://stackoverflow.com/questions/65423312/pika-pop-from-an-empty-queue
-        # Собирает адреса активных агентов.
-        conn = amqpstorm.Connection('localhost', 'guest', 'guest')
-        threading.Thread(target=self.get_active_agents, kwargs={'conn': conn}).start()
-        self.run_consuming()
+        t1 = threading.Thread(target=self.get_active_agents)
+        # t1.setDaemon(True)
+        t1.start()
+        t2 = threading.Thread(target=self.run_consuming)
+        # t2.setDaemon(True)
+        t2.start()
 
     def callback(self, channel, method, properties, body):
         data = json.loads(body)
@@ -33,9 +37,10 @@ class AddServer:
             else:
                 informant = 'no active informants'
             response = {'queue': 'server', 'operation': 'available informant', 'text': informant}
-            channel.basic_publish(
-                exchange='',
-                routing_key=agent,
+            self.channel.basic_publish(
+
+                exchange='all_agents',
+                routing_key='',
                 body=json.dumps(response)
             )
 
@@ -43,28 +48,27 @@ class AddServer:
         elif operation == 'activity confirmation':
             self.active_agents.append(agent)
 
-
     def run_consuming(self):
         """Начинает принимать сообщения."""
         self.channel.basic_consume(
             queue='server',
-            auto_ack=True,  # Автоматического подтверждения выполненной задачи.
+            # auto_ack=False,  # Автоматического подтверждения выполненной задачи.
             on_message_callback=self.callback
         )
         self.channel.start_consuming()  # Старт потребления (бесконечный цикл).
 
-    def get_active_agents(self, conn: amqpstorm.Connection):
+    def get_active_agents(self):
         """Получить активных агентов"""
-        with conn.channel():
-            while True:
-                self.active_agents = []  # Обнуление списка активных агентов.
-                data = {'queue': 'server', 'operation': 'activity check', 'text': 'confirm activity status'}
-                self.channel.basic_publish(
-                    exchange='all_agents',
-                    routing_key='',
-                    body=json.dumps(data),
-                )
-                time.sleep(5)
-                print(f'-- Active agents {self.active_agents}')
+        while True:
+            self.active_agents = []  # Обнуление списка активных агентов.
+            data = {'queue': 'server', 'operation': 'activity check', 'text': 'confirm activity status'}
+            self.channel.basic_publish(
+                exchange='all_agents',
+                routing_key='',
+                body=json.dumps(data),
+            )
+            time.sleep(5)
+            print(f'-- Active agents {self.active_agents}')
 
-AddServer()
+
+AddServer(connection)

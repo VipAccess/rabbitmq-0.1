@@ -39,8 +39,8 @@ class AddServer:
             response = {'queue': 'server', 'operation': 'available informant', 'text': informant}
             self.channel.basic_publish(
 
-                exchange='all_agents',
-                routing_key='',
+                exchange='',
+                routing_key=agent,
                 body=json.dumps(response)
             )
 

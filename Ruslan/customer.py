@@ -25,14 +25,14 @@ class AddCustomer:
         # Обработка ответа от сервера о свободных информаторах
         if agent == 'server' and operation == 'available informant':
             print(f'-- Available informants: {message}')
-            self.informant = input('Choose an informant (e.g., informant1): ')
-            self.get_allocator(self.informant)
+            #self.informant = input('Choose an informant (e.g., informant1): ')
+            self.get_allocator(message)
         
         # Обработка ответа от информатора о свободных распределителях
         elif agent.startswith('informant') and operation == 'available allocator':
             print(f'-- Available allocators: {message}')
-            self.allocator = input('Choose an allocator to submit a task (e.g., distributor1): ')
-            self.submit_a_task(self.allocator)
+            #self.allocator = input('Choose an allocator to submit a task (e.g., distributor1): ')
+            self.submit_a_task(message)
 
             # Добавить новую задачу
             self.get_informant()

@@ -3,18 +3,20 @@ import json
 import time
 import threading
 
-connection = pika.BlockingConnection(pika.ConnectionParameters('localhost'))
-
-
 class AddServer:
 
-    def __init__(self, connection):
-        # Подключение.
-        self.connection = connection
-        self.channel = self.connection.channel()  # Создание канала.
+    def __init__(self):
         self.active_agents = []  # Список активных агентов.
+        # Подключение.
+        connection = pika.BlockingConnection(pika.ConnectionParameters('localhost'))
+        connection2 = pika.BlockingConnection(pika.ConnectionParameters('localhost'))
+        self.channel = connection.channel()  # Создание канала.
+        self.channel2 = connection2.channel()  # Создание канала.
+
         self.channel.queue_declare(queue='server', durable=True)
+        self.channel2.queue_declare(queue='server', durable=True)
         self.channel.exchange_declare(exchange='all_agents', exchange_type='fanout', durable=True)
+        self.channel2.exchange_declare(exchange='all_agents', exchange_type='fanout', durable=True)
 
         t1 = threading.Thread(target=self.get_active_agents)
         # t1.setDaemon(True)
@@ -62,7 +64,7 @@ class AddServer:
         while True:
             self.active_agents = []  # Обнуление списка активных агентов.
             data = {'queue': 'server', 'operation': 'activity check', 'text': 'confirm activity status'}
-            self.channel.basic_publish(
+            self.channel2.basic_publish(
                 exchange='all_agents',
                 routing_key='',
                 body=json.dumps(data),
@@ -71,4 +73,4 @@ class AddServer:
             print(f'-- Active agents {self.active_agents}')
 
 
-AddServer(connection)
+AddServer()

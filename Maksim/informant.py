@@ -36,6 +36,7 @@ class Informant:
         elif operation == 'available allocator':
             if self.active_allocators:
                 allocator = self.active_allocators[0]
+            else:
                 allocator = 'no active allocators'
             response = {
                 'queue': self.informant_name,

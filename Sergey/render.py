@@ -21,7 +21,6 @@ class Render:
 
 
     def callback(self, ch, method, properties, body):
-        print(body)
         data = json.loads(body)
         agent = data['queue']
         operation = data['operation']

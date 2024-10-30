@@ -6,7 +6,7 @@ import threading
 class Informant:
     def __init__(self, informant_name):
         self.informant_name = informant_name
-        self.active_allocators = []
+        self.active_agents = []
 
         connection = pika.BlockingConnection(pika.ConnectionParameters('localhost'))
         connection2 = pika.BlockingConnection(pika.ConnectionParameters('localhost'))
@@ -29,13 +29,14 @@ class Informant:
         operation = data['operation']
         
 
-        if agent == 'server' and operation == 'activity check':
+        if  operation == 'activity check':
             response = {'queue': self.informant_name, 'operation': 'activity confirmation', 'text': 'ONLINE'}
             self.channel.basic_publish(exchange='', routing_key='server', body=json.dumps(response))
 
         elif operation == 'available allocator':
-            if self.active_allocators:
-                allocator = self.active_allocators[0]
+            allocators = [agent for agent in self.active_agents if agent.startswith('distributor')]
+            if allocators:
+                allocator = allocators[0]
             else:
                 allocator = 'no active allocators'
             response = {
@@ -47,13 +48,13 @@ class Informant:
             print(f"Sent available allocators to {data['queue']}")
 
         elif operation == 'activity confirmation':
-            if agent not in self.active_allocators:
-                self.active_allocators.append(agent)
+            if agent not in self.active_agents:
+                self.active_agents.append(agent)
                 print(f"Added {agent} to active allocators.")
 
     def collect_allocators(self):
         while True:
-            self.active_allocators = []
+            self.active_agents = []
             data = {'queue': self.informant_name, 'operation': 'activity check', 'text': 'confirm activity status'}
             self.channel2.basic_publish(
                 exchange='all_agents',
@@ -61,7 +62,7 @@ class Informant:
                 body=json.dumps(data)
                 )
             time.sleep(5)
-            print(f'-- Active allocators: {self.active_allocators}')
+            print(f'-- Active agents: {self.active_agents}')
 
     def run_consuming(self):
         self.channel.basic_consume(queue=self.informant_name, auto_ack=True, on_message_callback=self.callback)

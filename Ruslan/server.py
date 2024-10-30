@@ -48,7 +48,8 @@ class AddServer:
 
         # Подтверждение активности от агентов.
         elif operation == 'activity confirmation':
-            self.active_agents.append(agent)
+            if agent not in self.active_agents:
+                self.active_agents.append(agent)
 
     def run_consuming(self):
         """Начинает принимать сообщения."""
